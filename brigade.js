@@ -16,6 +16,8 @@ function createJavaTest(e, project) {
     "cd src/draft-boot",
     "mvn test"
   ];
+  
+  javaTestJob.streamLogs = true
 
   return javaTestJob
 }
