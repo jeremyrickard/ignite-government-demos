@@ -17,5 +17,5 @@ function javaTests(e, project) {
 }
 
 function runTests(e, project) {
-  javaTest(e, project).catch(e  => {console.error(e.toString())});
+  javaTest(e, project).run();
 }
