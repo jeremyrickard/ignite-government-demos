@@ -7,21 +7,13 @@ mixins:
   - exec 
 
 credentials:
-- name: SUBSCRIPTION_ID
-  env: AZURE_SUBSCRIPTION_ID
-- name: CLIENT_ID
-  env: AZURE_CLIENT_ID
-- name: TENANT_ID
-  env: AZURE_TENANT_ID
-- name: CLIENT_SECRET
-  env: AZURE_CLIENT_SECRET
 - name: kubeconfig
   path: /root/.kube/config
 
-name: porter-cnab
+name: simple-draft-boot 
 version: 0.1.0
-description: "Install Draft Boot and MySQL on Azure"
-invocationImage: jeremyrickard/draft-boot-mysql:latest
+description: "Install Draft Boot with in memory Database on Azure"
+invocationImage: jeremyrickard/simple-draft-boot-mysql:latest
 
 install:
   - description: "Install Hello World"
@@ -30,7 +22,7 @@ install:
       chart: /cnab/app/chart/draft-boot
       set:
         image.repository: "jeremyrickard/draft-boot"
-        image.tag: "464adeff3f13a8d5760ef4bfe6da31d77ccc3bde" 
+        image.tag: "latest" 
 uninstall:
   - description: ""
     exec:
@@ -38,8 +30,4 @@ uninstall:
       args: 
        - "-c"
        - "echo Goodbye World"
-#dependencies:
-#  - name: mysql
-#    parameters:
-#      database-name: wordpress
 
