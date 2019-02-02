@@ -4,8 +4,7 @@
     
     ###############################################################################
     #
-    # Policy : Container image name check if it matches of the whitelisted patterns
-    # e.g. should be from a organization registry. 
+    # Policy : Container tag should not be latest. 
     #
     ###############################################################################
     deny[{
