@@ -19,10 +19,10 @@ spec:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{ if .Values.database_url }}
+        {{ if .Values.database_host }}
         env:
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:mysql://{{ .Values.database_url }}
+          value: jdbc:mysql://{{ .Values.database_host }}:{{ .Values.database_port }}/{{ .Values.database_name }}
         - name: SPRING_DATASOURCE_USERNAME
           value: {{ .Values.database_user }}
         - name: SPRING_DATASOURCE_PASSWORD
