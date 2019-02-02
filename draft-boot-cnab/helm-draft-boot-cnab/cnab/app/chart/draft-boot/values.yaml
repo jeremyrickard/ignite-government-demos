@@ -1,0 +1,22 @@
+#Default values for Maven projects.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 1
+image:
+  repository: jeremyrickard/draft-boot
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  name: java
+  type: ClusterIP
+  externalPort: 80
+  internalPort: 4567
+resources:
+  limits:
+    cpu: 1
+    memory: 2048Mi
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+ingress:
+  enabled: false

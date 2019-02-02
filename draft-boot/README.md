@@ -217,10 +217,10 @@ spec:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{ if .Values.database_url }}
+        {{ if .Values.database_host }}
         env:
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:mysql://{{ .Values.database_url }}
+          value: jdbc:mysql://{{ .Values.database_host }}:{{ .Values.database_port }}/{{ .Values.database_name }}
         - name: SPRING_DATASOURCE_USERNAME
           value: {{ .Values.database_user }}
         - name: SPRING_DATASOURCE_PASSWORD
@@ -230,33 +230,6 @@ spec:
         - containerPort: {{ .Values.service.internalPort }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
-```
-
-Let's also update the `values.yaml` to set image values so the chart can be used without Draft. Edit the `values.yaml` to reflect the following:
-
-```yaml
-#Default values for Maven projects.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-replicaCount: 1
-image:
-  repository: jeremyrickard/draft-boot
-  tag: latest
-  pullPolicy: IfNotPresent
-service:
-  name: java
-  type: ClusterIP
-  externalPort: 80
-  internalPort: 4567
-resources:
-  limits:
-    cpu: 1
-    memory: 2048Mi
-  requests:
-    cpu: 500m
-    memory: 1024Mi
-ingress:
-  enabled: false
 ```
 
 Now, let's install MySQL in our cluster with Helm:
@@ -275,7 +248,7 @@ app 'draft-boot' deleted
 Now install Helm with the following command:
 
 ```console
-helm install ./charts/draft-boot --name draft-boot --set database_url=mysql.default.svc.cluster.local:3306/bizops --set database_user=bizops --set database_password=securepassword
+helm install ./charts/draft-boot --name draft-boot --set database_host=mysql.default.svc.cluster.local --set database_port=3306 --set database_name=bizops --set database_user=bizops --set database_password=securepassword
 ```
 
 
