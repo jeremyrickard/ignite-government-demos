@@ -7,6 +7,13 @@ events.on("exec", (e, project) => {
   job.run()
 });
 
+events.on("push", (e, project) => {
+  console.log("github push hook fired, C/I test");
+
+  var job = createJavaTest(e, project)
+  job.run()
+});
+
 function createJavaTest(e, project) {
   var javaTestJob = new Job("java-tests")
 
