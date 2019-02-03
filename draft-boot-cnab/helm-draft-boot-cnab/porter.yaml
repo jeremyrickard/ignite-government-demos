@@ -16,10 +16,13 @@ description: "Install Draft Boot and MySQL on Azure Kuberentes Using Helm"
 invocationImage: jeremyrickard/helm-draft-boot-mysql:latest
 
 parameters:
+
 - name: mysql-user
   type: string
+  default: bizops-user
   destination:
     env: MYSQL_USER
+
 - name: database-name
   type: string
   default: mydb
@@ -29,31 +32,32 @@ parameters:
 install:
   - description: "Install MySQL"
     helm:
-      name: draft-boot-mysql
+      name: helm-draft-boot-mysql
       chart: stable/mysql
       version: 0.10.2
       replace: true
       set:
+        persistence.enabled: false
         mysqlDatabase:
           source: bundle.parameters.database-name
         mysqlUser:
           source: bundle.parameters.mysql-user
     outputs:
     - name: mysql-root-password
-      secret: porter-ci-mysql
+      secret: helm-draft-boot-mysql
       key: mysql-root-password
     - name: mysql-password
-      secret: porter-ci-mysql
+      secret: helm-draft-boot-mysql
       key: mysql-password
   
   - description: "Install Hello World"
     helm:
-      name: draft-boot-mysql
+      name: helm-draft-boot
       chart: /cnab/app/chart/draft-boot
       set:
         image.repository: "jeremyrickard/draft-boot"
         image.tag: "latest"
-        database_host: draft-boot-mysql.default.svc.cluster.local
+        database_host: helm-draft-boot-mysql.default.svc.cluster.local
         database_port: 3306
         database_name: 
           source: bundle.parameters.database-name
