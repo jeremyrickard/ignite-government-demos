@@ -251,5 +251,4 @@ Now install Helm with the following command:
 helm install ./charts/draft-boot --name draft-boot --set database_host=mysql.default.svc.cluster.local --set database_port=3306 --set database_name=bizops --set database_user=bizops --set database_password=securepassword
 ```
 
-
 ## Next Steps
