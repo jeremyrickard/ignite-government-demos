@@ -1,3 +1,4 @@
 bundle.json
 Dockerfile
 cnab/app/mixins
+cnab/app/porter-runtime
