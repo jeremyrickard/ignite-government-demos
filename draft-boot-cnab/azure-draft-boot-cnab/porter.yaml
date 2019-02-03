@@ -61,7 +61,7 @@ install:
 
   - description: "Install Hello World"
     helm:
-      name: draft-boot-mysql
+      name: draft-boot-mysql-azure
       chart: /cnab/app/chart/draft-boot
       set:
         image.repository: "jeremyrickard/draft-boot"

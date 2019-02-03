@@ -838,3 +838,271 @@ execution completed successfully!
 ```
 
 ### Draft Boot with Azure MySQL
+
+For the next bundle, we'll also be creating an Azure MySQL instance. To do this, we'll need a service principal. If you need to do that, you can run the following command:
+
+```console
+az ad sp create-for-rbac --name osba-quickstart -o table
+```
+
+That will output a few fields, set those to the following environment variables:
+
+```console
+export AZURE_TENANT_ID=<Tenant>
+export AZURE_CLIENT_ID=<AppId>
+export AZURE_CLIENT_SECRET=<Password>
+export AZURE_SUBSCRIPTION_ID=<Subscription Id>
+```
+
+This bundle is similar to the previous bundles, in that it also uses the `helm` mixin, but an important difference here is we will also use the `azure` mixin. This will use ARM to create a database for us. We'll also pipe the output from that mixin to the helm install. The `porter.yaml` looks like this:
+
+```yaml
+# This is the configuration for Porter
+# You must define steps for each action, but the rest is optional
+# Uncomment out the sections below to take full advantage of what Porter can do!
+
+mixins:
+  - azure
+  - exec
+  - helm 
+
+credentials:
+- name: SUBSCRIPTION_ID
+  env: AZURE_SUBSCRIPTION_ID
+- name: CLIENT_ID
+  env: AZURE_CLIENT_ID
+- name: TENANT_ID
+  env: AZURE_TENANT_ID
+- name: CLIENT_SECRET
+  env: AZURE_CLIENT_SECRET
+- name: kubeconfig
+  path: /root/.kube/config
+
+parameters:
+- name: mysql_user
+  type: string
+  default: azureuser
+
+- name: mysql_password
+  type: string
+  default: "!Th1s1s4p4ss!"
+
+- name: database_name
+  type: string
+  default: "wordpress"
+
+name: simple-draft-boot 
+version: 0.1.0
+description: "Install Draft Boot and MySQL on Azure"
+invocationImage: jeremyrickard/simple-draft-boot-mysql:latest
+
+install:
+
+  - description: "Create Azure MySQL"
+    azure:
+      type: mysql
+      name: draft-boot-mysql
+      resourceGroup: "draft-boot-test"
+      parameters:
+        administratorLogin:
+          source: bundle.parameters.mysql_user
+        administratorLoginPassword:
+          source: bundle.parameters.mysql_password
+        location: "eastus"
+        serverName: "draft-boot-mysql-feb-2018"
+        version: "5.7"
+        sslEnforcement: "Disabled"
+        databaseName:
+          source: bundle.parameters.database_name
+    outputs:
+      - name: "MYSQL_HOST"
+        key: "MYSQL_HOST"
+
+  - description: "Install Hello World"
+    helm:
+      name: draft-boot-mysql-azure
+      chart: /cnab/app/chart/draft-boot
+      set:
+        image.repository: "jeremyrickard/draft-boot"
+        image.tag: "latest"
+        database_port: 3306
+        database_host: 
+          source: bundle.outputs.MYSQL_HOST
+        database_name:
+          source: bundle.parameters.database_name
+        database.user:
+          source: bundle.parameters.mysql_user
+        database.password:
+          source: bundle.parameters.mysql_password
+uninstall:
+  - description: ""
+    exec:
+      command: echo
+      args: 
+       - "-c"
+       - "echo Goodbye World"
+```
+
+Next, we again build the bundle with `porter build`:
+
+```console
+$ cd azure-draft-boot-cnab/
+$ porter build
+porter build
+Copying dependencies ===>
+Copying mixins ===>
+Copying mixin azure ===>
+Copying mixin exec ===>
+Copying mixin helm ===>
+Copying mixin porter ===>
+
+Generating Dockerfile =======>
+[FROM quay.io/deis/lightweight-docker-go:v0.2.0 FROM debian:stretch COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt  # exec mixin has no buildtime dependencies  RUN apt-get update && \  apt-get install -y curl && \  curl -o helm.tgz https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz && \  tar -xzf helm.tgz && \  mv linux-amd64/helm /usr/local/bin && \  rm helm.tgz RUN helm init --client-only COPY cnab/ /cnab/ COPY porter.yaml /cnab/app/porter.yaml CMD ["/cnab/app/run"]]
+
+Writing Dockerfile =======>
+FROM quay.io/deis/lightweight-docker-go:v0.2.0
+FROM debian:stretch
+COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+# exec mixin has no buildtime dependencies
+
+RUN apt-get update && \
+ apt-get install -y curl && \
+ curl -o helm.tgz https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz && \
+ tar -xzf helm.tgz && \
+ mv linux-amd64/helm /usr/local/bin && \
+ rm helm.tgz
+RUN helm init --client-only
+COPY cnab/ /cnab/
+COPY porter.yaml /cnab/app/porter.yaml
+CMD ["/cnab/app/run"]
+
+Starting Invocation Image Build =======>
+Step 1/8 : FROM quay.io/deis/lightweight-docker-go:v0.2.0
+ ---> acf6712d2918
+Step 2/8 : FROM debian:stretch
+ ---> de8b49d4b0b3
+Step 3/8 : COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+ ---> Using cache
+ ---> 6bf0ab0d751e
+Step 4/8 : RUN apt-get update &&  apt-get install -y curl &&  curl -o helm.tgz https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz &&  tar -xzf helm.tgz &&  mv linux-amd64/helm /usr/local/bin &&  rm helm.tgz
+ ---> Using cache
+ ---> 66fc7ec07da7
+Step 5/8 : RUN helm init --client-only
+ ---> Using cache
+ ---> f5831b023f53
+Step 6/8 : COPY cnab/ /cnab/
+ ---> 55f430aafaa5
+Step 7/8 : COPY porter.yaml /cnab/app/porter.yaml
+ ---> 3a906364fa0c
+Step 8/8 : CMD ["/cnab/app/run"]
+ ---> Running in 9a9a9d21cb2f
+ ---> 0cd592a6f22e
+Successfully built 0cd592a6f22e
+Successfully tagged jeremyrickard/simple-draft-boot-mysql:latest
+The push refers to repository [docker.io/jeremyrickard/simple-draft-boot-mysql]
+5ec60a513bda: Preparing
+417e3872d281: Preparing
+3609f9b8168b: Preparing
+3aeb7c6a347e: Preparing
+c7956a703d1e: Preparing
+c581f4ede92d: Preparing
+c581f4ede92d: Waiting
+3609f9b8168b: Mounted from jeremyrickard/draft-boot-mysql
+c7956a703d1e: Mounted from jeremyrickard/draft-boot-mysql
+3aeb7c6a347e: Mounted from jeremyrickard/draft-boot-mysql
+5ec60a513bda: Pushed
+c581f4ede92d: Mounted from jeremyrickard/draft-boot-mysql
+417e3872d281: Pushed
+latest: digest: sha256:1c5154f6a71db55786b4f02d97cf68d75abbf84db65387169342e305badd66c9 size: 1580
+
+Generating Bundle File with Invocation Image jeremyrickard/simple-draft-boot-mysql@sha256:1c5154f6a71db55786b4f02d97cf68d75abbf84db65387169342e305badd66c9 =======>
+Generating parameter definition mysql_user ====>
+Generating parameter definition mysql_password ====>
+Generating parameter definition database_name ====>
+Generating credential SUBSCRIPTION_ID ====>
+Generating credential CLIENT_ID ====>
+Generating credential TENANT_ID ====>
+Generating credential CLIENT_SECRET ====>
+Generating credential kubeconfig ====>
+```
+
+This output shows that there are a few different parameters and more credentials required. So let's build a new credential:
+
+```console
+$ duffle credential generate azure-kube-cred -f bundle.json --insecure
+? Choose a source for "CLIENT_SECRET"  [Use arrows to move, type to filter]
+  specific value
+> environment variable
+  file path
+  shell command
+? Choose a source for "CLIENT_SECRET" environment variable
+? Enter a value for "CLIENT_SECRET" AZURE_CLIENT_SECRET
+? Choose a source for "SUBSCRIPTION_ID"  [Use arrows to move, type to filter]
+  specific value
+> environment variable
+  file path
+  shell command
+? Choose a source for "SUBSCRIPTION_ID" environment variable
+? Enter a value for "SUBSCRIPTION_ID" AZURE_SUBSCRIPTION_ID
+? Choose a source for "TENANT_ID"  [Use arrows to move, type to filter]
+  specific value
+> environment variable
+  file path
+  shell command
+? Choose a source for "TENANT_ID" environment variable
+? Enter a value for "TENANT_ID" AZURE_TENANT_ID
+? Choose a source for "kubeconfig"  [Use arrows to move, type to filter]
+  specific value
+  environment variable
+> file path
+  shell command
+? Choose a source for "kubeconfig" file path
+? Enter a value for "kubeconfig" $HOME/.kube/config
+? Choose a source for "CLIENT_ID"  [Use arrows to move, type to filter]
+  specific value
+> environment variable
+  file path
+  shell command
+? Choose a source for "CLIENT_ID" environment variable
+? Enter a value for "CLIENT_ID" AZURE_CLIENT_ID
+```
+
+The credential that is generated will now have both the kubernetes config and the Azure config. Now we can run the bundle with duffle. Note, because this is using Azure to create the MySQL, it will take some time to finish:
+
+```console
+$ duffle install -c azure-kube-cred azure-mysql-draft-boot -f bundle.json --insecure
+Executing install action...
+executing porter install configuration from /cnab/app/porter.yaml
+Create Azure MySQL
+Starting deployment operations...
+Finished deployment operations...
+Install Hello World
+/usr/local/bin/helm helm install --name draft-boot-mysql-azure /cnab/app/chart/draft-boot --set database.password=!Th1s1s4p4ss! --set database.user=azureuser --set database_host=draft-boot-mysql-feb-2018.mysql.database.azure.com --set database_name=wordpress --set database_port=3306 --set image.repository=jeremyrickard/draft-boot --set image.tag=latest
+NAME:   draft-boot-mysql-azure
+LAST DEPLOYED: Sun Feb  3 03:53:56 2019
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/Service
+NAME                               TYPE       CLUSTER-IP   EXTERNAL-IP  PORT(S)  AGE
+draft-boot-mysql-azure-draft-boot  ClusterIP  10.0.240.28  <none>       80/TCP   0s
+
+==> v1beta1/Deployment
+NAME                               DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+draft-boot-mysql-azure-draft-boot  1        1        1           0          0s
+
+==> v1/Pod(related)
+NAME                                                READY  STATUS             RESTARTS  AGE
+draft-boot-mysql-azure-draft-boot-5d595d6674-chfvd  0/1    ContainerCreating  0         0s
+
+
+NOTES:
+
+  http://draft-boot-mysql-azure. to access your application
+
+execution completed successfully!
+```
+
+After the Azure MySQL instance was created, Helm was used to install the sample app, just like in the previous examples. This time, however, the database_host was the value that was generated by the `azure` mixin.
