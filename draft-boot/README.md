@@ -23,6 +23,8 @@ We'll also use Helm for some additional configuration.
 This sample applicaton is JAva based, so you can iterate on it locally, but when you're ready to start testing it in a Kubernetes cluster you'll need to write a Dockerfile to build a Docker container and Kubernetes manifests in order to deploy it. That's where Draft can help. To get started with Draft, you'll run the `draft create` command in the project directory.
 
 ```console
+$ draft init
+$ draft config set registry <USERNAME>
 $ draft create
 --> Draft detected Shell (41.268907%)
 --> Could not find a pack for Shell. Trying to find the next likely language match...
